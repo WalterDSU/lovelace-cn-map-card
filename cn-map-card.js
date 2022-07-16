@@ -2,8 +2,86 @@ console.info("%c  GAODE MAP CARD  \n%c Version 1.2.7 ",
 "color: orange; font-weight: bold; background: black", 
 "color: white; font-weight: bold; background: dimgray");
 
+window._AMapSecurityConfig = { securityJsCode:'6dfe05bc031ab44411012f73d00208c2', }
 import 'https://webapi.amap.com/loader.js';
 import './w3color.js';
+
+Date.prototype.format = function(fmt) { 
+     var o = { 
+        "M+" : this.getMonth()+1,                 //月份 
+        "d+" : this.getDate(),                    //日 
+        "h+" : this.getHours(),                   //小时 
+        "m+" : this.getMinutes(),                 //分 
+        "s+" : this.getSeconds(),                 //秒 
+        "q+" : Math.floor((this.getMonth()+3)/3), //季度 
+        "S"  : this.getMilliseconds()             //毫秒 
+    }; 
+    if(/(y+)/.test(fmt)) {
+            fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
+    }
+     for(var k in o) {
+        if(new RegExp("("+ k +")").test(fmt)){
+             fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+         }
+     }
+    return fmt; 
+}
+
+function convertUTCTimeToLocalTime(UTCDateString) {
+	if(!UTCDateString){
+		return '-';
+	}
+
+	function formatFunc(str) { //格式化显示
+		return str > 9 ? str : '0' + str
+	}
+
+	var date2 = new Date(UTCDateString); //这步是关
+	var year = date2.getFullYear();
+	var mon = formatFunc(date2.getMonth() + 1);
+	var day = formatFunc(date2.getDate());
+	var hour = date2.getHours();
+	var seconds = date2.getSeconds();
+	var noon = hour >= 12 ? '' : 'AM';
+	hour = formatFunc(hour);
+	var min = formatFunc(date2.getMinutes());
+	var dateStr = year+'-'+mon+'-'+day+' '+hour+':'+min+':'+seconds;
+	return dateStr;
+}
+
+function getRadius(idx, t1, t2) {
+    if (t1 === undefined) {
+	 var date1 = new Date();
+    } else {
+	 var date1 = new Date(t1);
+    }
+    if (t2 === undefined) {
+	 var date2 = new Date();
+    } else {
+	 var date2 = new Date(t2);
+    }
+
+    var seconds = Math.floor((date2.getTime() - date1.getTime())/1000)
+    var minute = Math.floor(seconds/60)
+    var hour = Math.floor(seconds/60/60)
+
+    var waitTime = '0' 
+    if (hour > 0) {
+        waitTime = hour.toString() + '小时 ' + (minute - hour * 60).toString() + '分钟 ' + (seconds % 60).toString() + '秒'
+    } else if (minute > 0) {
+        waitTime = minute.toString() + '分钟 ' + (seconds - minute * 60).toString() + '秒'
+    } else {
+        waitTime = seconds.toString() + '秒'
+    }
+
+    var radius = Math.floor(minute/5)
+    if (radius < 5) {
+       return [5, waitTime]
+    } else {
+       return [radius, waitTime]
+
+    }
+}
 
 const preloadCard = type => window.loadCardHelpers()
 .then(({ createCardElement }) => createCardElement({type}));
@@ -19,6 +97,7 @@ class GaodeMapCard extends HTMLElement {
     super();
     this.markers = {};
     this.paths = {};
+    this.circle = {}
     this.persons = []; 
     this.fit = 0; 
     this.trace = false;
@@ -57,6 +136,18 @@ class GaodeMapCard extends HTMLElement {
     <div id="root">
       <div id="map">
         <div id="container"></div>
+        <div class="info" id="info">
+          移动到圆点查看
+        </div>
+        <div class="entity" id="entity">
+	</div>
+        <div class="time" id="time">
+          <label for="fname">开始:</label>
+          <input type="text" id="start_time">
+          <label for="lname">结束:</label>
+          <input type="text" id="end_time">
+	  <button type="button" id="refresh">确定</button>
+        </div>
         <ha-icon-button id="fitbutton" icon="hass:image-filter-center-focus" title="Reset focus" role="button" tabindex="0" aria-disabled="false"></ha-icon-button>
       </div>
   </div>
@@ -119,6 +210,7 @@ class GaodeMapCard extends HTMLElement {
       this.historyPath = {};
       this.entities.forEach(function(entity,index) {
         let entityt = typeof entity === "string"?entity:entity.entity;
+
         let type = entity.type?entity.type:"gps";
         this._addMarker(entityt,index,type);
       },this);
@@ -216,6 +308,44 @@ class GaodeMapCard extends HTMLElement {
     }).catch(e => {
         console.log(e);
     })
+
+    const endTime = new Date();
+    const startTime = new Date();
+    let hours_to_show =this.config.hours_to_show||0;
+    //startTime.setHours(endTime.getHours() - hours_to_show);
+    startTime.setHours(0, 0, 0, 0);
+
+    this.root.querySelector('#start_time').value = startTime.format("yyyy-MM-dd hh:mm:ss")
+    this.root.querySelector('#end_time').value = endTime.format("yyyy-MM-dd hh:mm:ss")
+
+    var entityhtml = '<button type="button" id="entity_all">全部</button>'
+    this.entities.forEach(function(entity,index) {
+      let entityt = typeof entity === "string"?entity:entity.entity;
+      if (entityt != 'zone.home') {
+        let objstates = this._hass.states[entityt];
+        let entityName =objstates.attributes.friendly_name?objstates.attributes.friendly_name.split(' ').map(function (part) { return part.substr(0, 1); }).join('') : '';
+        entityhtml += '<button type="button" id="' + entityt.replace('.', '_') + '">'+entityName+'</button>'
+      }
+    },this);
+    this.root.querySelector("#entity").innerHTML = entityhtml;
+    this.entities.forEach(function(entity,index) {
+      let entityt = typeof entity === "string"?entity:entity.entity;
+      if (entityt != 'zone.home') {
+        this.root.querySelector('#'+entityt.replace('.', '_')).addEventListener('click', function(entityt) {
+                                                                       this._entity(entityt);
+                                                                    }.bind(this, entityt));
+      }
+    },this);
+    var entityt = 'entity_all'
+    this.root.querySelector('#' + entityt).addEventListener('click', function(entityt) {
+                                                                         this._entity(undefined);
+                                                                      }.bind(this, entityt));
+    var args = undefined
+    this.root.querySelector('#refresh').addEventListener('click', function(args) {
+                                                                         this.oldentities = []
+                                                                      }.bind(this, args));
+
+
   }
   _updateMarker(entity,type){
     let objstates = this._hass.states[entity];
@@ -311,13 +441,51 @@ class GaodeMapCard extends HTMLElement {
     this.fit++;
     if(this.fit === this.entities.length)this.loaded = true;
   }
-  
-  _gethistory(hours, entity, color, type){
-    const endTime = new Date();
-    const startTime = new Date();
-    startTime.setHours(endTime.getHours() - hours);
-    
+  _entity(entity) {
     const that  = this;
+    for (var i=0; i < that.entities.length ; ++i){
+         var ientity = typeof that.entities[i] === "string"?that.entities[i]:that.entities[i].entity;
+         if (entity === undefined) {
+            if( that.paths[ientity]){
+              that.paths[ientity].show();
+            }
+            if( that.circle[ientity]){
+              for (var j=0; j < that.circle[ientity].length ; ++j){
+                that.circle[ientity][j].show();
+              }
+            }
+            continue
+         }
+         if (entity == ientity) {
+            if( that.paths[entity]){
+              that.paths[entity].show();
+            }
+            if( that.circle[entity]){
+              for (var j=0; j < that.circle[entity].length ; ++j){
+                that.circle[entity][j].show();
+              }
+            }
+         } else {
+            if( that.paths[ientity]){
+              that.paths[ientity].hide();
+            }
+            if( that.circle[ientity]){
+              for (var j=0; j < that.circle[ientity].length ; ++j){
+                that.circle[ientity][j].hide();
+              }
+            }
+         }
+    }
+  }
+  _gethistory(hours, entity, color, type){
+    //const endTime = new Date();
+    //const startTime = new Date();
+    //startTime.setHours(endTime.getHours() - hours);
+
+    const that  = this;
+    //alert(that.root.querySelector('#start_time').value)
+    const startTime = new Date(that.root.querySelector('#start_time').value)
+    const endTime = new Date(that.root.querySelector('#end_time').value)
     this._hass.callApi("GET", "history/period/"+startTime.toISOString()+"?filter_entity_id="+entity+"&significant_changes_only=0&end_time="+endTime.toISOString())
     .then(function(res) {
       let arr = res[0]
@@ -325,13 +493,36 @@ class GaodeMapCard extends HTMLElement {
       if (arr.length > 1 && that.historyPath[entity] != arr.length) {
         that.historyPath[entity] = arr.length;
         var lineArr = []
+        var infoArr = []
+	var waitArr = []
         for(var i in arr) {
           let p = arr[i].attributes;
           if(p.longitude)lineArr.push(new AMap.LngLat(p.longitude,p.latitude));
+
+          let radius = [0, 0]
+          if (parseInt(i) + 1 < arr.length) {
+              radius = getRadius(i, arr[i].last_updated, arr[(parseInt(i)+1).toString()].last_updated);
+              if(p.longitude)waitArr.push(radius[0]);
+	  } else {
+              radius = getRadius(i, arr[i].last_updated, undefined);
+              if(p.longitude)waitArr.push(radius[0]);
+	  }
+
+          let lu = arr[i].last_updated;
+          if(p.longitude) {
+             if (p.speed) {
+               infoArr.push(p.friendly_name + '> 速度：' + p.speed.toString() +  'km/h 到达时间：' + convertUTCTimeToLocalTime(lu) + ' 停留时间:' + radius[1]);
+             } else {
+               infoArr.push(p.friendly_name + '> 到达时间：' + convertUTCTimeToLocalTime(lu) + ' 停留时间:' + radius[1]);
+             }
+          }
+
         }
 
         if(type=='gaode'){
           var path2 = lineArr;
+          var info2 = infoArr;
+          var wait2 = waitArr;
           if( that.paths[entity]){
             that.paths[entity].setPath(path2);
           }else{
@@ -339,27 +530,47 @@ class GaodeMapCard extends HTMLElement {
               map: that.map,
               path: path2,  
               zIndex: 200,
-              strokeWeight: 3, 
+              strokeWeight: 6, 
               strokeColor: color, 
               strokeOpacity: 0.5,
+	      showDir: true,
               lineJoin: 'round' 
             });
 
+            var circleArr = []
             for(var i=0;i<path2.length;i+=1){
               var center = path2[i];
-              new AMap.CircleMarker({
+              var circle = new AMap.CircleMarker({
                 map: that.map,
                 center:center,
                 strokeWeight:0,
-                radius:4,
+                radius: wait2[i],
                 fillColor:color,
                 fillOpacity:0.5,
                 zIndex:200,
                 bubble:true
               });
+              circleArr.push(circle)
+              const t = info2[i]
+              circle.on('mouseover', function (e) {
+                   this.setOptions({strokeWeight:3})
+                   var text = '' + t
+                   that.root.querySelector("#info").innerText = text;
+                   that.root.querySelector("#info").style.display = "block"
+      	      });
+              circle.on('mouseout', function (e) {
+                   this.setOptions({strokeWeight:0})
+                   var text = '移动到圆点查看'
+                   that.root.querySelector("#info").innerText = text;
+                   that.root.querySelector("#info").style.display = "none"
+      	      });
+
             }
+            that.circle[entity] = circleArr
           }
         }else{
+          var info2 = infoArr;
+          var wait2 = waitArr;
           AMap.convertFrom(lineArr, type, function (status, result) {
             if (result.info === 'ok') {
               var path2 = result.locations;
@@ -370,30 +581,51 @@ class GaodeMapCard extends HTMLElement {
                   map: that.map,
                   path: path2,  
                   zIndex: 200,
-                  strokeWeight: 3, 
+                  strokeWeight: 6, 
                   strokeColor: color, 
                   strokeOpacity: 0.5,
+	          showDir: true,
                   lineJoin: 'round' 
                 });
     
+                var circleArr = []
                 for(var i=0;i<path2.length;i+=1){
                   var center = path2[i];
-                  new AMap.CircleMarker({
+                  var circle = new AMap.CircleMarker({
                     map: that.map,
                     center:center,
                     strokeWeight:0,
-                    radius:4,
+                    radius: wait2[i],
                     fillColor:color,
                     fillOpacity:0.5,
                     zIndex:200,
                     bubble:true
                   });
+
+                  circleArr.push(circle)
+                  const t = info2[i]
+                  circle.on('mouseover', function (e) {
+                    var text = '' + t
+                    this.setOptions({strokeWeight:3})
+                    that.root.querySelector("#info").innerText = text;
+                    that.root.querySelector("#info").style.display = "block"
+      	          });
+                  circle.on('mouseout', function (e) {
+                    var text = '移动到圆点查看'
+                    this.setOptions({strokeWeight:0})
+                    that.root.querySelector("#info").innerText = text;
+                    that.root.querySelector("#info").style.display = "none"
+      	          });
+
                 }
+                that.circle[entity] = circleArr
+
               }
   
             }
           });
         }
+
 
       }
     })
@@ -476,6 +708,58 @@ class GaodeMapCard extends HTMLElement {
               #fitbutton.active {
                 color:var(--paper-item-icon-active-color);
               }
+              .info {
+                padding: 0.75rem 1.25rem;
+                margin-bottom: 1rem;
+                border-radius: 0.25rem;
+                position: fixed;
+                top: 5rem;
+                background-color: white;
+                width: auto;
+                min-width: 22rem;
+                border-width: 0;
+                right: 1rem;
+                display: none;
+                box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
+              }
+              .entity {
+                padding: 0.75rem 1.25rem;
+                margin-bottom: 1rem;
+                border-radius: 0.25rem;
+                position: fixed;
+                top: 5rem;
+                background-color: white;
+                width: auto;
+                border-width: 0;
+                left: 1rem;
+                box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
+              }
+              .time {
+                padding: 0.75rem 1.25rem;
+                margin-bottom: 1rem;
+                border-radius: 0.25rem;
+                position: fixed;
+                top: 5rem;
+                background-color: white;
+                width: auto;
+                border-width: 0;
+                left: 18rem;
+                box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
+              }
+              .marker {
+                position: absolute;
+                top: -20px;
+                right: -118px;
+                color: #fff;
+                padding: 4px 10px;
+                box-shadow: 1px 1px 1px rgba(10, 10, 10, .2);
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: "";
+                background-color: #25A5F7;
+                border-radius: 3px;
+            }
+
     `
     return css;
   }
