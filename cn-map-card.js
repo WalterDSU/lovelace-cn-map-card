@@ -27,6 +27,27 @@ Date.prototype.format = function(fmt) {
     return fmt; 
 }
 
+function controlArrayLength(arr) {
+  if (arr.length <= 1000) {
+    // 如果数组长度小于等于 1000，则无需操作
+    return arr;
+  } else {
+    // 计算需要移除的元素个数
+    const removeCount = arr.length - 1000;
+
+    // 计算平均每个元素需要移除的个数
+    const averageRemoveCount = Math.ceil(removeCount / arr.length);
+
+    // 循环移除元素，直到数组长度小于等于 1000
+    for (let i = 0; i < removeCount; i++) {
+      // 每次移除一个平均移除个数的元素
+      arr.splice(i * averageRemoveCount, averageRemoveCount);
+    }
+
+    return arr;
+  }
+}
+
 function convertUTCTimeToLocalTime(UTCDateString) {
 	if(!UTCDateString){
 		return '-';
@@ -486,10 +507,10 @@ class GaodeMapCard extends HTMLElement {
     //alert(that.root.querySelector('#start_time').value)
     const startTime = new Date(that.root.querySelector('#start_time').value)
     const endTime = new Date(that.root.querySelector('#end_time').value)
-    this._hass.callApi("GET", "history/period/"+startTime.toISOString()+"?minimal_response&filter_entity_id="+entity+"&significant_changes_only=0&end_time="+endTime.toISOString())
+    this._hass.callApi("GET", "history/period/"+startTime.toISOString()+"?filter_entity_id="+entity+"&significant_changes_only=0&end_time="+endTime.toISOString())
     .then(function(res) {
-      let arr = res[0]
-
+      let arr = controlArrayLength(res[0])
+      
       if (arr.length > 1 && that.historyPath[entity] != arr.length) {
         that.historyPath[entity] = arr.length;
         var lineArr = []
