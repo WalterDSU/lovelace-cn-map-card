@@ -486,7 +486,7 @@ class GaodeMapCard extends HTMLElement {
     //alert(that.root.querySelector('#start_time').value)
     const startTime = new Date(that.root.querySelector('#start_time').value)
     const endTime = new Date(that.root.querySelector('#end_time').value)
-    this._hass.callApi("GET", "history/period/"+startTime.toISOString()+"?filter_entity_id="+entity+"&significant_changes_only=0&end_time="+endTime.toISOString())
+    this._hass.callApi("GET", "history/period/"+startTime.toISOString()+"?minimal_response&filter_entity_id="+entity+"&significant_changes_only=0&end_time="+endTime.toISOString())
     .then(function(res) {
       let arr = res[0]
 
