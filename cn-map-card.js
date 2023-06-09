@@ -37,7 +37,7 @@ function controlArrayLength(arr) {
 
     // 计算平均每个元素需要移除的个数
     const averageRemoveCount = Math.ceil(removeCount / arr.length);
-    const step = Math.floor(arr.length / 1000);
+    const step = Math.ceil(arr.length / 1000);
 
     const controlledArray = [];
     // 循环添加均匀分布的元素到新数组
