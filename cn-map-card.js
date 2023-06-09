@@ -37,14 +37,14 @@ function controlArrayLength(arr) {
 
     // 计算平均每个元素需要移除的个数
     const averageRemoveCount = Math.ceil(removeCount / arr.length);
+    const step = Math.floor(arr.length / 1000);
 
-    // 循环移除元素，直到数组长度小于等于 1000
-    for (let i = 0; i < removeCount; i++) {
-      // 每次移除一个平均移除个数的元素
-      arr.splice(i * averageRemoveCount, averageRemoveCount);
+    const controlledArray = [];
+    // 循环添加均匀分布的元素到新数组
+    for (let i = 0; i < arr.length; i += step) {
+      controlledArray.push(arr[i]);
     }
-
-    return arr;
+    return controlledArray;
   }
 }
 
