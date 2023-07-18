@@ -344,8 +344,11 @@ class GaodeMapCard extends HTMLElement {
       let entityt = typeof entity === "string"?entity:entity.entity;
       if (entityt != 'zone.home') {
         let objstates = this._hass.states[entityt];
-        let entityName =objstates.attributes.friendly_name?objstates.attributes.friendly_name.split(' ').map(function (part) { return part.substr(0, 1); }).join('') : '';
-        entityhtml += '<button type="button" id="' + entityt.replace('.', '_') + '">'+entityName+'</button>'
+        //let entityName =objstates.attributes.friendly_name?objstates.attributes.friendly_name.split(' ').map(function (part) { return part.substr(0, 1); }).join('') : '';
+        if(objstates.attributes.friendly_name){
+          entityhtml += '<button type="button" id="' + entityt.replace('.', '_') + '">'+objstates.attributes.friendly_name+'</button>'
+        }
+      
       }
     },this);
     this.root.querySelector("#entity").innerHTML = entityhtml;
