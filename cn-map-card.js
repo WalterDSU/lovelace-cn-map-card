@@ -2,7 +2,7 @@ console.info("%c  GAODE MAP CARD  \n%c Version 1.2.7 ",
 "color: orange; font-weight: bold; background: black", 
 "color: white; font-weight: bold; background: dimgray");
 
-window._AMapSecurityConfig = { securityJsCode:'6dfe05bc031ab44411012f73d00208c2', }
+window._AMapSecurityConfig = { securityJsCode:'', }
 import 'https://webapi.amap.com/loader.js';
 import './w3color.js';
 
@@ -164,9 +164,9 @@ class GaodeMapCard extends HTMLElement {
 	</div>
         <div class="time" id="time">
           <label for="fname">开始:</label>
-          <input type="text" id="start_time">
+          <input type="text" id="start_time" style="width: 8rem">
           <label for="lname">结束:</label>
-          <input type="text" id="end_time">
+          <input type="text" id="end_time" style="width: 8rem">
 	  <button type="button" id="refresh">确定</button>
         </div>
         <ha-icon-button id="fitbutton" icon="hass:image-filter-center-focus" title="Reset focus" role="button" tabindex="0" aria-disabled="false"></ha-icon-button>
@@ -190,7 +190,7 @@ class GaodeMapCard extends HTMLElement {
   connectedCallback(){
     // console.log(this.config);
     this._loadMap({
-      key: this.config.key||"ce3b1a3a7e67fc75810ce1ba1f83c01a",   // 申请好的Web端开发者Key，首次调用 load 时必填 f87e0c9c4f3e1e78f963075d142979f0
+      key: this.config.key||"",   // 申请好的Web端开发者Key，首次调用 load 时必填 f87e0c9c4f3e1e78f963075d142979f0
       version: "2.0",   // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
       plugins: ['AMap.MoveAnimation'] //插件列表
     });
@@ -301,8 +301,8 @@ class GaodeMapCard extends HTMLElement {
   setConfig(config) {
     preloadCard('map');
     customElements.get("hui-map-card");
-
     this.config = deepClone(config);
+    //preloadCard({type:'entities',geo_location_sources :''});
     let d = this.root.querySelector("#root")
     d.style.paddingBottom = 100*(this.config.aspect_ratio||1)+"%";
   }
@@ -336,8 +336,8 @@ class GaodeMapCard extends HTMLElement {
     //startTime.setHours(endTime.getHours() - hours_to_show);
     startTime.setHours(0, 0, 0, 0);
 
-    this.root.querySelector('#start_time').value = startTime.format("yyyy-MM-dd hh:mm:ss")
-    this.root.querySelector('#end_time').value = endTime.format("yyyy-MM-dd hh:mm:ss")
+    this.root.querySelector('#start_time').value = startTime.format("yyyy-MM-dd hh:mm")
+    this.root.querySelector('#end_time').value = endTime.format("yyyy-MM-dd hh:mm")
 
     var entityhtml = '<button type="button" id="entity_all">全部</button>'
     this.entities.forEach(function(entity,index) {
@@ -744,28 +744,24 @@ class GaodeMapCard extends HTMLElement {
                 box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
               }
               .entity {
-                padding: 0.75rem 1.25rem;
-                margin-bottom: 1rem;
+                padding: 0.1rem 0.1rem;
                 border-radius: 0.25rem;
-                position: fixed;
-                top: 5rem;
+                position: absolute;
+                bottom: 2.2rem;
                 background-color: white;
                 width: auto;
                 border-width: 0;
-                left: 1rem;
-                box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
+                box-shadow: 0 1px 4px 0 rgb(114 124 245 / 50%);
               }
               .time {
-                padding: 0.75rem 1.25rem;
-                margin-bottom: 1rem;
+                padding: 0.3rem 0.5rem;
                 border-radius: 0.25rem;
-                position: fixed;
-                top: 5rem;
+                position: absolute;
+                bottom: 0rem;
                 background-color: white;
                 width: auto;
                 border-width: 0;
-                left: 18rem;
-                box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
+                box-shadow: 0 1px 4px 0 rgb(114 124 245 / 50%);
               }
               .marker {
                 position: absolute;
