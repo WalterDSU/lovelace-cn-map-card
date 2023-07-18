@@ -733,16 +733,15 @@ class GaodeMapCard extends HTMLElement {
                 color:var(--paper-item-icon-active-color);
               }
               .info {
-                padding: 0.75rem 1.25rem;
-                margin-bottom: 1rem;
+                padding: 0.3rem 0.5rem;
                 border-radius: 0.25rem;
-                position: fixed;
-                top: 5rem;
+                position: absolute;
+                top: 0rem;
                 background-color: white;
                 width: auto;
                 min-width: 22rem;
                 border-width: 0;
-                right: 1rem;
+                right: 0rem;
                 display: none;
                 box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
               }
