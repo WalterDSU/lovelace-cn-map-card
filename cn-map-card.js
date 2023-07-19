@@ -2,7 +2,7 @@ console.info("%c  GAODE MAP CARD  \n%c Version 1.2.7 ",
 "color: orange; font-weight: bold; background: black", 
 "color: white; font-weight: bold; background: dimgray");
 
-window._AMapSecurityConfig = { securityJsCode:'', }
+window._AMapSecurityConfig = { securityJsCode:'e495b7b0b99c70fc78392ec5e71f5fad', }
 import 'https://webapi.amap.com/loader.js';
 import './w3color.js';
 
