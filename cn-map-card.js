@@ -160,18 +160,18 @@ class GaodeMapCard extends HTMLElement {
         <div class="info" id="info">
           移动到圆点查看
         </div>
-        <div class="entity" id="entity">
-	</div>
-        <div class="time" id="time">
-          <label for="fname">开始:</label>
-          <input type="text" id="start_time" style="width: 8rem">
-          <label for="lname">结束:</label>
-          <input type="text" id="end_time" style="width: 8rem">
-	  <button type="button" id="refresh">确定</button>
+        <div class="info-choose">
+          <div class="entity" id="entity"></div>
+          <div class="time" id="time">
+          <input type="datetime-local" id="start_time" style="width: 10rem">
+          <label for="lname">-</label>
+          <input type="datetime-local" id="end_time" style="width: 10rem">
+	          <button type="button" id="refresh">确定</button>
+          </div>
         </div>
         <ha-icon-button id="fitbutton" icon="hass:image-filter-center-focus" title="Reset focus" role="button" tabindex="0" aria-disabled="false"></ha-icon-button>
       </div>
-  </div>
+    </div>
     `;
     this.root.appendChild(hacard);
     let fitButton = this.root.querySelector("#fitbutton")
@@ -745,21 +745,20 @@ class GaodeMapCard extends HTMLElement {
                 display: none;
                 box-shadow: 0 2px 6px 0 rgb(114 124 245 / 50%);
               }
-              .entity {
-                padding: 0.1rem 0.1rem;
-                border-radius: 0.25rem;
+              .info-choose {
                 position: absolute;
-                bottom: 2.2rem;
+                bottom: 0rem;
+              }
+              .entity {
+                padding: 0.3rem 0.3rem;
+                border-radius: 0.25rem;
                 background-color: white;
                 width: auto;
-                border-width: 0;
-                box-shadow: 0 1px 4px 0 rgb(114 124 245 / 50%);
+                display: inline;
               }
               .time {
                 padding: 0.3rem 0.5rem;
                 border-radius: 0.25rem;
-                position: absolute;
-                bottom: 0rem;
                 background-color: white;
                 width: auto;
                 border-width: 0;
